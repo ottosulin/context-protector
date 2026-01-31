@@ -231,7 +231,7 @@ class AprielGuardProvider(GuardrailProvider):
 
         logger.info("Using device: %s", self._device)
 
-        self._tokenizer = AutoTokenizer.from_pretrained(model_name)  # type: ignore[no-untyped-call]
+        self._tokenizer = AutoTokenizer.from_pretrained(model_name)
         self._model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float16 if self._device != "cpu" else torch.float32,

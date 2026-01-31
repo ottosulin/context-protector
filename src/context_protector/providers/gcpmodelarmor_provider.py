@@ -46,6 +46,11 @@ class GCPModelArmorProvider(GuardrailProvider):
 
         config = get_config()
 
+        # Declare types explicitly (all can be None if not configured)
+        self._project_id: str | None
+        self._location: str | None
+        self._template_id: str | None
+
         # Project ID: parameter > env > config
         if project_id is not None:
             self._project_id = project_id
@@ -346,12 +351,14 @@ class GCPModelArmorProvider(GuardrailProvider):
 
         # Try to get the name if it's an enum
         if hasattr(match_state, "name"):
-            state_name = match_state.name
-            return match_state_map.get(state_name, state_name)
+            state_name: str = match_state.name
+            result = match_state_map.get(state_name)
+            return str(result) if result is not None else state_name
 
         # Handle raw int or string values
         if match_state in match_state_map:
-            return match_state_map[match_state]
+            result = match_state_map[match_state]
+            return str(result) if result is not None else None
 
         # Fallback to string representation
         return str(match_state)
