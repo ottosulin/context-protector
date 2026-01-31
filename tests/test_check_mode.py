@@ -1,7 +1,6 @@
 """Tests for --check CLI mode (OpenCode integration)."""
 
 import json
-import subprocess
 import sys
 from io import StringIO
 from typing import Any
@@ -95,13 +94,15 @@ class TestHandleCheckCommand:
 
         input_json = json.dumps(input_data)
 
-        with patch("sys.stdin", StringIO(input_json)):
-            with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
-                with pytest.raises(SystemExit) as exc_info:
-                    _handle_check_command()
+        with (
+            patch("sys.stdin", StringIO(input_json)),
+            patch("sys.stdout", new_callable=StringIO) as mock_stdout,
+        ):
+            with pytest.raises(SystemExit) as exc_info:
+                _handle_check_command()
 
-                assert exc_info.value.code == 0
-                return json.loads(mock_stdout.getvalue())
+            assert exc_info.value.code == 0
+            return json.loads(mock_stdout.getvalue())
 
     def test_empty_content_returns_safe(self) -> None:
         result = self._run_check_command({"content": "", "type": "tool_input"})
@@ -163,13 +164,15 @@ class TestCheckCommandErrorHandling:
     def _run_with_stdin(self, stdin_content: str) -> dict[str, Any]:
         from context_protector import _handle_check_command
 
-        with patch("sys.stdin", StringIO(stdin_content)):
-            with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
-                with pytest.raises(SystemExit) as exc_info:
-                    _handle_check_command()
+        with (
+            patch("sys.stdin", StringIO(stdin_content)),
+            patch("sys.stdout", new_callable=StringIO) as mock_stdout,
+        ):
+            with pytest.raises(SystemExit) as exc_info:
+                _handle_check_command()
 
-                assert exc_info.value.code == 0
-                return json.loads(mock_stdout.getvalue())
+            assert exc_info.value.code == 0
+            return json.loads(mock_stdout.getvalue())
 
     def test_empty_stdin_returns_safe_with_error(self) -> None:
         result = self._run_with_stdin("")
@@ -201,11 +204,13 @@ class TestCheckCommandJSONOutput:
     def _run_check_command(self, input_data: dict[str, Any]) -> str:
         from context_protector import _handle_check_command
 
-        with patch("sys.stdin", StringIO(json.dumps(input_data))):
-            with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
-                with pytest.raises(SystemExit):
-                    _handle_check_command()
-                return mock_stdout.getvalue()
+        with (
+            patch("sys.stdin", StringIO(json.dumps(input_data))),
+            patch("sys.stdout", new_callable=StringIO) as mock_stdout,
+        ):
+            with pytest.raises(SystemExit):
+                _handle_check_command()
+            return mock_stdout.getvalue()
 
     def test_output_is_valid_json(self) -> None:
         with patch("context_protector.check_content") as mock_check:
@@ -248,19 +253,25 @@ class TestMainFunctionCheckRoute:
     def test_check_flag_routes_to_handler(self) -> None:
         with patch("context_protector._handle_check_command") as mock_handler:
             mock_handler.side_effect = SystemExit(0)
-            
-            with patch.object(sys, "argv", ["context-protector", "--check"]):
-                with pytest.raises(SystemExit):
-                    from context_protector import main
-                    main()
+
+            with (
+                patch.object(sys, "argv", ["context-protector", "--check"]),
+                pytest.raises(SystemExit),
+            ):
+                from context_protector import main
+
+                main()
 
             mock_handler.assert_called_once()
 
     def test_help_shows_check_option(self) -> None:
-        with patch("sys.stdout", new_callable=StringIO) as mock_stdout:
-            with patch.object(sys, "argv", ["context-protector", "--help"]):
-                from context_protector import main
-                main()
+        with (
+            patch("sys.stdout", new_callable=StringIO) as mock_stdout,
+            patch.object(sys, "argv", ["context-protector", "--help"]),
+        ):
+            from context_protector import main
+
+            main()
 
             output = mock_stdout.getvalue()
             assert "--check" in output

@@ -412,7 +412,7 @@ class AprielGuardProvider(GuardrailProvider):
 
         logger.warning(
             "AprielGuard provider is currently disabled. "
-            "This provider requires downloading a 16GB model and is not yet ready for production use."
+            "This provider requires downloading a 16GB model and is not yet production-ready."
         )
 
         return GuardrailAlert(
