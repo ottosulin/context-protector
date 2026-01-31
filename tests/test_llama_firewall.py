@@ -1,6 +1,7 @@
 """Tests for the LlamaFirewall provider."""
 
 import os
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from context_protector.config import reset_config
@@ -298,7 +299,7 @@ class TestLlamaFirewallCheckContent:
         # First call raises auth error, second succeeds
         call_count = 0
 
-        def mock_scan(msg: UserMessage | ToolMessage) -> MagicMock:
+        def mock_scan(self: Any, msg: UserMessage | ToolMessage) -> MagicMock:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
