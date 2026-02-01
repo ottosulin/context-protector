@@ -153,32 +153,25 @@ class AprielGuardProvider(GuardrailProvider):
 
         Args:
             reasoning: Enable reasoning mode override. If None, uses config/env var.
-            device: Device to use (auto/cpu/cuda) override. If None, uses config/env var.
+            device: Device to use (auto/cpu/cuda) override. If None, uses env var or default.
         """
-        from context_protector.config import get_config
-
-        config = get_config()
-
         self._model: Any = None
         self._tokenizer: Any = None
         self._device: str | None = None
 
-        # Reasoning mode: parameter > env > config
+        # Reasoning mode: parameter > env > default (False)
         if reasoning is not None:
             self._reasoning_mode = reasoning
         else:
             env_val = os.environ.get("CONTEXT_PROTECTOR_APRIEL_REASONING")
-            if env_val:
-                self._reasoning_mode = env_val.lower() == "on"
-            else:
-                self._reasoning_mode = config.apriel_guard.reasoning
+            self._reasoning_mode = env_val.lower() == "on" if env_val else False
 
-        # Device config: parameter > env > config
+        # Device config: parameter > env > default (auto)
         if device is not None:
             self._device_config = device.lower()
         else:
             env_val = os.environ.get("CONTEXT_PROTECTOR_APRIEL_DEVICE")
-            self._device_config = env_val.lower() if env_val else config.apriel_guard.device.lower()
+            self._device_config = env_val.lower() if env_val else "auto"
 
         logger.info(
             "Initializing AprielGuardProvider (reasoning=%s, device=%s)",
