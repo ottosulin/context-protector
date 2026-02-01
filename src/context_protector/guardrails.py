@@ -42,7 +42,7 @@ def get_provider(name: str | None = None) -> GuardrailProvider:
     """
     if name is None:
         config = get_config()
-        name = config.general.provider
+        name = config.provider
 
     # Check if provider exists
     if name not in PROVIDER_REGISTRY:

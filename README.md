@@ -79,11 +79,25 @@ context-protector init
 Config file: `~/.config/context-protector/config.yaml`
 
 ```yaml
-general:
-  response_mode: warn    # warn (default) or block
+# Which provider to use
+provider: LlamaFirewall       # LlamaFirewall, NeMoGuardrails, GCPModelArmor
 
+# Response mode when threats detected
+response_mode: warn           # warn (default) or block
+
+# Provider-specific settings
 llama_firewall:
-  scanner_mode: auto     # auto, basic, or full
+  scanner_mode: auto          # auto, basic, or full
+
+nemo_guardrails:
+  mode: all                   # heuristics, injection, self_check, local, all
+  ollama_model: mistral:7b
+  ollama_base_url: http://localhost:11434
+
+gcp_model_armor:
+  project_id: null
+  location: null
+  template_id: null
 ```
 
 Run `context-protector init` to create a config file with all options.
@@ -93,6 +107,7 @@ Run `context-protector init` to create a config file with all options.
 All settings can be overridden with environment variables (prefix: `CONTEXT_PROTECTOR_`):
 
 ```bash
+export CONTEXT_PROTECTOR_PROVIDER=NeMoGuardrails
 export CONTEXT_PROTECTOR_RESPONSE_MODE=block
 export CONTEXT_PROTECTOR_SCANNER_MODE=basic
 ```
@@ -131,8 +146,9 @@ nemo_guardrails:
 Enterprise-grade content safety via Google Cloud.
 
 ```yaml
+provider: GCPModelArmor
+
 gcp_model_armor:
-  enabled: true
   project_id: your-project
   location: us-central1
   template_id: your-template
@@ -148,11 +164,12 @@ gcp_model_armor:
 ## CLI Reference
 
 ```bash
-context-protector              # Run as Claude Code hook (reads stdin)
-context-protector init         # Create config file
-context-protector --check      # Check content from stdin JSON
-context-protector --help       # Show help
-context-protector --version    # Show version
+context-protector                     # Run as Claude Code hook (reads stdin)
+context-protector init                # Create config file
+context-protector --check             # Check content from stdin JSON
+context-protector --config <path>     # Use custom config file
+context-protector --help              # Show help
+context-protector --version           # Show version
 ```
 
 ### Standalone Check Mode

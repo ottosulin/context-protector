@@ -37,7 +37,7 @@ class HookHandler:
         """
         self.provider = provider or get_provider()
         self._config = get_config()
-        self._response_mode = response_mode or self._config.general.response_mode
+        self._response_mode = response_mode or self._config.response_mode
         logger.info(
             "HookHandler initialized with provider: %s, response_mode: %s",
             self.provider.name,

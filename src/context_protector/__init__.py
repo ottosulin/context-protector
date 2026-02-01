@@ -12,12 +12,13 @@ import json
 import logging
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
-from context_protector.config import get_config, init_config
+from context_protector.config import get_config, init_config, set_config_path
 from context_protector.hook_handler import HookHandler, process_hook
 
-__version__ = "0.1.0"
+__version__ = "1.0.1"
 
 __all__ = ["CheckResult", "HookHandler", "check_content", "main", "process_hook"]
 
@@ -141,11 +142,11 @@ def _configure_logging() -> None:
     config = get_config()
 
     handlers: list[logging.Handler] = []
-    if config.general.log_file:
-        handlers.append(logging.FileHandler(config.general.log_file))
+    if config.log_file:
+        handlers.append(logging.FileHandler(config.log_file))
 
     logging.basicConfig(
-        level=getattr(logging, config.general.log_level.upper(), logging.WARNING),
+        level=getattr(logging, config.log_level.upper(), logging.WARNING),
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=handlers if handlers else None,
     )
@@ -157,19 +158,20 @@ def _print_help() -> None:
 Guardrail-based security for AI coding agents (Claude Code, OpenCode).
 
 Usage:
-  context-protector              Run as Claude Code hook (reads hook JSON from stdin)
-  context-protector --check      Check content for threats (reads JSON from stdin)
-  context-protector init         Create default config file
-  context-protector init --force Overwrite existing config file
-  context-protector --help       Show this help message
-  context-protector --version    Show version
+  context-protector                     Run as Claude Code hook (reads JSON from stdin)
+  context-protector --check             Check content for threats (reads JSON from stdin)
+  context-protector --config <path>     Use custom config file
+  context-protector init                Create default config file
+  context-protector init --force        Overwrite existing config file
+  context-protector --help              Show this help message
+  context-protector --version           Show version
 
 --check mode (for OpenCode integration):
   Input:  {{"content": "text", "type": "tool_input|tool_output", "tool_name": "opt"}}
   Output: {{"safe": true|false, "alert": {{"explanation": "...", "provider": "..."}}}}
 
 Config file: ~/.config/context-protector/config.yaml
-Environment variables override config file settings.
+Environment variables override config file settings (prefix: CONTEXT_PROTECTOR_).
 """)
 
 
@@ -182,10 +184,8 @@ def _handle_init_command() -> None:
         print(f"Created config file: {config_path}")
         print()
         print("Default configuration:")
-        print("  - Mode: default (multi-provider)")
-        print("  - LlamaFirewall: auto mode (PROMPT_GUARD if auth available)")
-        print("  - NeMo Guardrails: all mode (heuristics + injection)")
-        print("  - AprielGuard: disabled")
+        print("  - Provider: LlamaFirewall (auto mode)")
+        print("  - Response mode: warn")
         print()
         print(f"Edit {config_path} to customize.")
     except FileExistsError:
@@ -196,7 +196,22 @@ def _handle_init_command() -> None:
         sys.exit(1)
 
 
+def _parse_config_flag() -> None:
+    """Parse --config flag and set custom config path."""
+    for i, arg in enumerate(sys.argv):
+        if arg == "--config" and i + 1 < len(sys.argv):
+            config_path = Path(sys.argv[i + 1])
+            set_config_path(config_path)
+            # Remove --config and its argument from sys.argv
+            sys.argv.pop(i)  # Remove --config
+            sys.argv.pop(i)  # Remove the path
+            return
+
+
 def main() -> None:
+    # Parse --config flag first (can be used with any command)
+    _parse_config_flag()
+
     if len(sys.argv) > 1:
         command = sys.argv[1]
 

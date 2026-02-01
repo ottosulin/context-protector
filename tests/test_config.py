@@ -8,9 +8,8 @@ from unittest.mock import patch
 import pytest
 
 from context_protector.config import (
-    AprielGuardConfig,
     Config,
-    GeneralConfig,
+    GCPModelArmorConfig,
     LlamaFirewallConfig,
     NeMoGuardrailsConfig,
     _apply_env_overrides,
@@ -23,53 +22,42 @@ from context_protector.config import (
     reset_config,
     save_config,
     save_default_config,
+    set_config_path,
 )
 
 
 class TestDataclasses:
     """Test configuration dataclasses."""
 
-    def test_general_config_defaults(self) -> None:
-        """Test GeneralConfig default values."""
-        config = GeneralConfig()
-        assert config.mode == "default"
-        assert config.provider == "LlamaFirewall"
-        assert config.providers == []
-        assert config.log_level == "WARNING"
-        assert config.log_file is None
-
     def test_llama_firewall_config_defaults(self) -> None:
         """Test LlamaFirewallConfig default values."""
         config = LlamaFirewallConfig()
-        assert config.enabled is True
         assert config.scanner_mode == "auto"
 
     def test_nemo_guardrails_config_defaults(self) -> None:
         """Test NeMoGuardrailsConfig default values."""
         config = NeMoGuardrailsConfig()
-        assert config.enabled is True
         assert config.mode == "all"
-        assert config.config_path is None
-        assert config.openai_model == "gpt-4o-mini"
         assert config.ollama_model == "mistral:7b"
         assert config.ollama_base_url == "http://localhost:11434"
-        assert config.perplexity_threshold == 89.79
-        assert config.prefix_threshold == 1845.65
 
-    def test_apriel_guard_config_defaults(self) -> None:
-        """Test AprielGuardConfig default values."""
-        config = AprielGuardConfig()
-        assert config.enabled is False
-        assert config.reasoning is False
-        assert config.device == "auto"
+    def test_gcp_model_armor_config_defaults(self) -> None:
+        """Test GCPModelArmorConfig default values."""
+        config = GCPModelArmorConfig()
+        assert config.project_id is None
+        assert config.location is None
+        assert config.template_id is None
 
     def test_config_defaults(self) -> None:
         """Test Config default values."""
         config = Config()
-        assert isinstance(config.general, GeneralConfig)
+        assert config.provider == "LlamaFirewall"
+        assert config.response_mode == "warn"
+        assert config.log_level == "WARNING"
+        assert config.log_file is None
         assert isinstance(config.llama_firewall, LlamaFirewallConfig)
         assert isinstance(config.nemo_guardrails, NeMoGuardrailsConfig)
-        assert isinstance(config.apriel_guard, AprielGuardConfig)
+        assert isinstance(config.gcp_model_armor, GCPModelArmorConfig)
 
 
 class TestGetConfigPath:
@@ -77,6 +65,8 @@ class TestGetConfigPath:
 
     def test_default_path(self) -> None:
         """Test default config path uses ~/.config."""
+        # Reset any override from previous tests
+        set_config_path(None)
         with patch.dict(os.environ, {}, clear=True):
             os.environ.pop("XDG_CONFIG_HOME", None)
             path = get_config_path()
@@ -85,10 +75,21 @@ class TestGetConfigPath:
 
     def test_xdg_config_home(self) -> None:
         """Test config path respects XDG_CONFIG_HOME."""
+        set_config_path(None)
         with patch.dict(os.environ, {"XDG_CONFIG_HOME": "/custom/config"}):
             path = get_config_path()
             expected = Path("/custom/config/context-protector/config.yaml")
             assert path == expected
+
+    def test_set_config_path_override(self) -> None:
+        """Test set_config_path overrides default path."""
+        custom_path = Path("/custom/path/config.yaml")
+        set_config_path(custom_path)
+        try:
+            path = get_config_path()
+            assert path == custom_path
+        finally:
+            set_config_path(None)
 
 
 class TestMergeDictIntoDataclass:
@@ -96,24 +97,24 @@ class TestMergeDictIntoDataclass:
 
     def test_merge_valid_keys(self) -> None:
         """Test merging valid keys into dataclass."""
-        config = GeneralConfig()
-        _merge_dict_into_dataclass(config, {"mode": "single", "provider": "NeMoGuardrails"})
-        assert config.mode == "single"
+        config = Config()
+        _merge_dict_into_dataclass(config, {"provider": "NeMoGuardrails", "response_mode": "block"})
         assert config.provider == "NeMoGuardrails"
+        assert config.response_mode == "block"
 
     def test_merge_ignores_unknown_keys(self) -> None:
         """Test merging ignores unknown keys."""
-        config = GeneralConfig()
-        _merge_dict_into_dataclass(config, {"unknown_key": "value", "mode": "multi"})
-        assert config.mode == "multi"
+        config = Config()
+        _merge_dict_into_dataclass(config, {"unknown_key": "value", "provider": "Mock"})
+        assert config.provider == "Mock"
         assert not hasattr(config, "unknown_key")
 
     def test_merge_ignores_none_values(self) -> None:
         """Test merging ignores None values."""
-        config = GeneralConfig()
-        config.mode = "existing"
-        _merge_dict_into_dataclass(config, {"mode": None})
-        assert config.mode == "existing"
+        config = Config()
+        config.provider = "existing"
+        _merge_dict_into_dataclass(config, {"provider": None})
+        assert config.provider == "existing"
 
 
 class TestLoadConfigFromFile:
@@ -127,11 +128,11 @@ class TestLoadConfigFromFile:
     def test_load_valid_yaml(self) -> None:
         """Test loading valid YAML file."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write("general:\n  mode: single\n")
+            f.write("provider: NeMoGuardrails\nresponse_mode: block\n")
             f.flush()
             try:
                 result = _load_config_from_file(Path(f.name))
-                assert result == {"general": {"mode": "single"}}
+                assert result == {"provider": "NeMoGuardrails", "response_mode": "block"}
             finally:
                 os.unlink(f.name)
 
@@ -161,41 +162,33 @@ class TestLoadConfigFromFile:
 class TestApplyEnvOverrides:
     """Test _apply_env_overrides function."""
 
-    def test_general_mode_override(self) -> None:
-        """Test CONTEXT_PROTECTOR_MODE override."""
-        config = Config()
-        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_MODE": "SINGLE"}):
-            _apply_env_overrides(config)
-            assert config.general.mode == "single"
-
-    def test_general_provider_override(self) -> None:
+    def test_provider_override(self) -> None:
         """Test CONTEXT_PROTECTOR_PROVIDER override."""
         config = Config()
         with patch.dict(os.environ, {"CONTEXT_PROTECTOR_PROVIDER": "NeMoGuardrails"}):
             _apply_env_overrides(config)
-            assert config.general.provider == "NeMoGuardrails"
+            assert config.provider == "NeMoGuardrails"
 
-    def test_general_providers_override(self) -> None:
-        """Test CONTEXT_PROTECTOR_PROVIDERS override."""
+    def test_response_mode_override(self) -> None:
+        """Test CONTEXT_PROTECTOR_RESPONSE_MODE override."""
         config = Config()
-        env = {"CONTEXT_PROTECTOR_PROVIDERS": "LlamaFirewall, NeMoGuardrails"}
-        with patch.dict(os.environ, env):
+        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_RESPONSE_MODE": "BLOCK"}):
             _apply_env_overrides(config)
-            assert config.general.providers == ["LlamaFirewall", "NeMoGuardrails"]
+            assert config.response_mode == "block"
 
     def test_log_level_override(self) -> None:
         """Test CONTEXT_PROTECTOR_LOG_LEVEL override."""
         config = Config()
         with patch.dict(os.environ, {"CONTEXT_PROTECTOR_LOG_LEVEL": "debug"}):
             _apply_env_overrides(config)
-            assert config.general.log_level == "DEBUG"
+            assert config.log_level == "DEBUG"
 
     def test_log_file_override(self) -> None:
         """Test CONTEXT_PROTECTOR_LOG_FILE override."""
         config = Config()
         with patch.dict(os.environ, {"CONTEXT_PROTECTOR_LOG_FILE": "/var/log/protector.log"}):
             _apply_env_overrides(config)
-            assert config.general.log_file == "/var/log/protector.log"
+            assert config.log_file == "/var/log/protector.log"
 
     def test_scanner_mode_override(self) -> None:
         """Test CONTEXT_PROTECTOR_SCANNER_MODE override."""
@@ -204,20 +197,6 @@ class TestApplyEnvOverrides:
             _apply_env_overrides(config)
             assert config.llama_firewall.scanner_mode == "full"
 
-    def test_apriel_reasoning_override(self) -> None:
-        """Test CONTEXT_PROTECTOR_APRIEL_REASONING override."""
-        config = Config()
-        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_APRIEL_REASONING": "on"}):
-            _apply_env_overrides(config)
-            assert config.apriel_guard.reasoning is True
-
-    def test_apriel_device_override(self) -> None:
-        """Test CONTEXT_PROTECTOR_APRIEL_DEVICE override."""
-        config = Config()
-        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_APRIEL_DEVICE": "CUDA"}):
-            _apply_env_overrides(config)
-            assert config.apriel_guard.device == "cuda"
-
     def test_nemo_mode_override(self) -> None:
         """Test CONTEXT_PROTECTOR_NEMO_MODE override."""
         config = Config()
@@ -225,57 +204,42 @@ class TestApplyEnvOverrides:
             _apply_env_overrides(config)
             assert config.nemo_guardrails.mode == "injection"
 
-    def test_nemo_config_path_override(self) -> None:
-        """Test CONTEXT_PROTECTOR_NEMO_CONFIG_PATH override."""
-        config = Config()
-        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_NEMO_CONFIG_PATH": "/custom/nemo"}):
-            _apply_env_overrides(config)
-            assert config.nemo_guardrails.config_path == "/custom/nemo"
-
-    def test_nemo_openai_model_override(self) -> None:
-        """Test CONTEXT_PROTECTOR_NEMO_OPENAI_MODEL override."""
-        config = Config()
-        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_NEMO_OPENAI_MODEL": "gpt-4"}):
-            _apply_env_overrides(config)
-            assert config.nemo_guardrails.openai_model == "gpt-4"
-
-    def test_nemo_perplexity_threshold_override(self) -> None:
-        """Test CONTEXT_PROTECTOR_NEMO_PERPLEXITY_THRESHOLD override."""
-        config = Config()
-        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_NEMO_PERPLEXITY_THRESHOLD": "100.5"}):
-            _apply_env_overrides(config)
-            assert config.nemo_guardrails.perplexity_threshold == 100.5
-
-    def test_nemo_perplexity_threshold_invalid(self) -> None:
-        """Test invalid CONTEXT_PROTECTOR_NEMO_PERPLEXITY_THRESHOLD is ignored."""
-        config = Config()
-        original = config.nemo_guardrails.perplexity_threshold
-        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_NEMO_PERPLEXITY_THRESHOLD": "invalid"}):
-            _apply_env_overrides(config)
-            assert config.nemo_guardrails.perplexity_threshold == original
-
-    def test_nemo_prefix_threshold_override(self) -> None:
-        """Test CONTEXT_PROTECTOR_NEMO_PREFIX_THRESHOLD override."""
-        config = Config()
-        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_NEMO_PREFIX_THRESHOLD": "2000.0"}):
-            _apply_env_overrides(config)
-            assert config.nemo_guardrails.prefix_threshold == 2000.0
-
     def test_nemo_ollama_model_override(self) -> None:
-        """Test CONTEXT_PROTECTOR_NEMO_OLLAMA_MODEL override."""
+        """Test CONTEXT_PROTECTOR_OLLAMA_MODEL override."""
         config = Config()
-        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_NEMO_OLLAMA_MODEL": "phi3"}):
+        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_OLLAMA_MODEL": "phi3"}):
             _apply_env_overrides(config)
             assert config.nemo_guardrails.ollama_model == "phi3"
 
     def test_nemo_ollama_base_url_override(self) -> None:
-        """Test CONTEXT_PROTECTOR_NEMO_OLLAMA_BASE_URL override."""
+        """Test CONTEXT_PROTECTOR_OLLAMA_BASE_URL override."""
         config = Config()
         with patch.dict(
-            os.environ, {"CONTEXT_PROTECTOR_NEMO_OLLAMA_BASE_URL": "http://remote:11434"}
+            os.environ, {"CONTEXT_PROTECTOR_OLLAMA_BASE_URL": "http://remote:11434"}
         ):
             _apply_env_overrides(config)
             assert config.nemo_guardrails.ollama_base_url == "http://remote:11434"
+
+    def test_gcp_project_id_override(self) -> None:
+        """Test CONTEXT_PROTECTOR_GCP_PROJECT_ID override."""
+        config = Config()
+        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_GCP_PROJECT_ID": "my-project"}):
+            _apply_env_overrides(config)
+            assert config.gcp_model_armor.project_id == "my-project"
+
+    def test_gcp_location_override(self) -> None:
+        """Test CONTEXT_PROTECTOR_GCP_LOCATION override."""
+        config = Config()
+        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_GCP_LOCATION": "us-central1"}):
+            _apply_env_overrides(config)
+            assert config.gcp_model_armor.location == "us-central1"
+
+    def test_gcp_template_id_override(self) -> None:
+        """Test CONTEXT_PROTECTOR_GCP_TEMPLATE_ID override."""
+        config = Config()
+        with patch.dict(os.environ, {"CONTEXT_PROTECTOR_GCP_TEMPLATE_ID": "my-template"}):
+            _apply_env_overrides(config)
+            assert config.gcp_model_armor.template_id == "my-template"
 
 
 class TestLoadConfig:
@@ -283,44 +247,63 @@ class TestLoadConfig:
 
     def test_load_config_no_file(self) -> None:
         """Test loading config when no file exists."""
+        set_config_path(None)
         with (
             tempfile.TemporaryDirectory() as tmpdir,
             patch.dict(os.environ, {"XDG_CONFIG_HOME": tmpdir}, clear=True),
         ):
             config = load_config()
             # Should have defaults
-            assert config.general.mode == "default"
+            assert config.provider == "LlamaFirewall"
             assert config.llama_firewall.scanner_mode == "auto"
 
     def test_load_config_with_file(self) -> None:
         """Test loading config from file."""
+        set_config_path(None)
         with tempfile.TemporaryDirectory() as tmpdir:
             config_dir = Path(tmpdir) / "context-protector"
             config_dir.mkdir(parents=True)
             config_file = config_dir / "config.yaml"
-            config_file.write_text("general:\n  mode: multi\n  provider: AprielGuard\n")
+            config_file.write_text("provider: NeMoGuardrails\nresponse_mode: block\n")
 
             with patch.dict(os.environ, {"XDG_CONFIG_HOME": tmpdir}, clear=True):
                 config = load_config()
-                assert config.general.mode == "multi"
-                assert config.general.provider == "AprielGuard"
+                assert config.provider == "NeMoGuardrails"
+                assert config.response_mode == "block"
 
     def test_load_config_env_overrides_file(self) -> None:
         """Test environment variables override file values."""
+        set_config_path(None)
         with tempfile.TemporaryDirectory() as tmpdir:
             config_dir = Path(tmpdir) / "context-protector"
             config_dir.mkdir(parents=True)
             config_file = config_dir / "config.yaml"
-            config_file.write_text("general:\n  mode: multi\n")
+            config_file.write_text("provider: NeMoGuardrails\n")
 
             env = {
                 "XDG_CONFIG_HOME": tmpdir,
-                "CONTEXT_PROTECTOR_MODE": "single",
+                "CONTEXT_PROTECTOR_PROVIDER": "LlamaFirewall",
             }
             with patch.dict(os.environ, env, clear=True):
                 config = load_config()
                 # Env var should override file
-                assert config.general.mode == "single"
+                assert config.provider == "LlamaFirewall"
+
+    def test_load_config_nested_settings(self) -> None:
+        """Test loading nested provider settings from file."""
+        set_config_path(None)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_dir = Path(tmpdir) / "context-protector"
+            config_dir.mkdir(parents=True)
+            config_file = config_dir / "config.yaml"
+            config_file.write_text(
+                "llama_firewall:\n  scanner_mode: full\nnemo_guardrails:\n  mode: local\n"
+            )
+
+            with patch.dict(os.environ, {"XDG_CONFIG_HOME": tmpdir}, clear=True):
+                config = load_config()
+                assert config.llama_firewall.scanner_mode == "full"
+                assert config.nemo_guardrails.mode == "local"
 
 
 class TestSaveConfig:
@@ -331,16 +314,17 @@ class TestSaveConfig:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "subdir" / "config.yaml"
             config = Config()
-            config.general.mode = "single"
+            config.provider = "NeMoGuardrails"
 
             save_config(config, path)
 
             assert path.exists()
             content = path.read_text()
-            assert "mode: single" in content
+            assert "provider: NeMoGuardrails" in content
 
     def test_save_config_default_path(self) -> None:
         """Test save_config uses default path."""
+        set_config_path(None)
         with (
             tempfile.TemporaryDirectory() as tmpdir,
             patch.dict(os.environ, {"XDG_CONFIG_HOME": tmpdir}),
@@ -362,8 +346,8 @@ class TestSaveDefaultConfig:
             save_default_config(path)
 
             content = path.read_text()
-            assert "# Claude Context Protector Configuration" in content
-            assert "# Environment variables take precedence" in content
+            assert "# Context Protector Configuration" in content
+            assert "provider: LlamaFirewall" in content
             assert "scanner_mode: auto" in content
 
 
@@ -372,6 +356,7 @@ class TestInitConfig:
 
     def test_init_config_creates_file(self) -> None:
         """Test init_config creates config file."""
+        set_config_path(None)
         with (
             tempfile.TemporaryDirectory() as tmpdir,
             patch.dict(os.environ, {"XDG_CONFIG_HOME": tmpdir}),
@@ -383,6 +368,7 @@ class TestInitConfig:
 
     def test_init_config_raises_if_exists(self) -> None:
         """Test init_config raises FileExistsError if file exists."""
+        set_config_path(None)
         with tempfile.TemporaryDirectory() as tmpdir:
             config_dir = Path(tmpdir) / "context-protector"
             config_dir.mkdir(parents=True)
@@ -397,6 +383,7 @@ class TestInitConfig:
 
     def test_init_config_force_overwrites(self) -> None:
         """Test init_config with force=True overwrites existing."""
+        set_config_path(None)
         with tempfile.TemporaryDirectory() as tmpdir:
             config_dir = Path(tmpdir) / "context-protector"
             config_dir.mkdir(parents=True)
@@ -408,7 +395,7 @@ class TestInitConfig:
 
                 content = path.read_text()
                 # Should have template content, not original
-                assert "# Claude Context Protector Configuration" in content
+                assert "# Context Protector Configuration" in content
                 assert "existing: config" not in content
 
 
@@ -438,17 +425,18 @@ class TestGetConfigAndReset:
     def test_get_config_loads_from_file(self) -> None:
         """Test get_config loads from file."""
         reset_config()
+        set_config_path(None)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             config_dir = Path(tmpdir) / "context-protector"
             config_dir.mkdir(parents=True)
             config_file = config_dir / "config.yaml"
-            config_file.write_text("general:\n  mode: multi\n")
+            config_file.write_text("provider: NeMoGuardrails\n")
 
             with patch.dict(os.environ, {"XDG_CONFIG_HOME": tmpdir}, clear=True):
                 reset_config()
                 config = get_config()
-                assert config.general.mode == "multi"
+                assert config.provider == "NeMoGuardrails"
 
         # Clean up
         reset_config()

@@ -109,31 +109,30 @@ class NeMoGuardrailsProvider(GuardrailProvider):
             else os.environ.get("CONTEXT_PROTECTOR_NEMO_MODE", config.nemo_guardrails.mode).lower()
         )
 
-        # Perplexity threshold: parameter > env > config
+        # Perplexity threshold: parameter > env > default
         if perplexity_threshold is not None:
             self._perplexity_threshold = perplexity_threshold
         else:
             env_val = os.environ.get("CONTEXT_PROTECTOR_NEMO_PERPLEXITY_THRESHOLD")
             self._perplexity_threshold = (
-                float(env_val) if env_val else config.nemo_guardrails.perplexity_threshold
+                float(env_val) if env_val else DEFAULT_LENGTH_PER_PERPLEXITY_THRESHOLD
             )
 
-        # Prefix threshold: parameter > env > config
+        # Prefix threshold: parameter > env > default
         if prefix_threshold is not None:
             self._prefix_threshold = prefix_threshold
         else:
             env_val = os.environ.get("CONTEXT_PROTECTOR_NEMO_PREFIX_THRESHOLD")
             self._prefix_threshold = (
-                float(env_val) if env_val else config.nemo_guardrails.prefix_threshold
+                float(env_val) if env_val else DEFAULT_PREFIX_SUFFIX_PERPLEXITY_THRESHOLD
             )
 
-        # OpenAI model: parameter > env > config
+        # OpenAI model: parameter > env > default
         if openai_model is not None:
             self._openai_model = openai_model
         else:
-            default_model = config.nemo_guardrails.openai_model
             self._openai_model = os.environ.get(
-                "CONTEXT_PROTECTOR_NEMO_OPENAI_MODEL", default_model
+                "CONTEXT_PROTECTOR_NEMO_OPENAI_MODEL", "gpt-4o-mini"
             )
 
         # Ollama model: parameter > env > config
@@ -350,14 +349,10 @@ rails:
             ) from e
 
         # Use custom config path or generate one
-        # Priority: constructor parameter > env var > config file > generate
-        from context_protector.config import get_config
-
-        config = get_config()
+        # Priority: constructor parameter > env var > generate
         config_path = (
             self._custom_config_path
             or os.environ.get("CONTEXT_PROTECTOR_NEMO_CONFIG_PATH")
-            or config.nemo_guardrails.config_path
         )
         if config_path:
             logger.info("Using custom config path: %s", config_path)

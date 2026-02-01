@@ -53,8 +53,7 @@ context-protector/
 │   └── release.yml              # PyPI publishing
 ├── pyproject.toml
 ├── README.md
-├── LICENSE
-└── PLAN.md                      # Roadmap
+└── LICENSE
 ```
 
 ## Development Commands
@@ -120,12 +119,52 @@ class GuardrailProvider(ABC):
 
 Config file: `~/.config/context-protector/config.yaml`
 
-Key environment variables (prefix `CONTEXT_PROTECTOR_`):
-- `PROVIDER` - Provider name
-- `RESPONSE_MODE` - `warn` or `block`
-- `SCANNER_MODE` - LlamaFirewall mode
-- `NEMO_MODE` - NeMo mode
-- `LOG_LEVEL` - Logging level
+### Config Structure (v1.0.1+)
+
+```yaml
+# Top-level settings
+provider: LlamaFirewall       # LlamaFirewall, NeMoGuardrails, GCPModelArmor
+response_mode: warn           # warn or block
+log_level: WARNING            # DEBUG, INFO, WARNING, ERROR
+log_file: null                # Optional log file path
+
+# Provider-specific settings
+llama_firewall:
+  scanner_mode: auto          # auto, basic, full
+
+nemo_guardrails:
+  mode: all                   # heuristics, injection, self_check, local, all
+  ollama_model: mistral:7b
+  ollama_base_url: http://localhost:11434
+
+gcp_model_armor:
+  project_id: null
+  location: null
+  template_id: null
+```
+
+### CLI Flags
+
+- `--config <path>` - Use custom config file path
+- `--check` - Standalone content checking mode
+- `--version` - Show version
+- `--help` - Show help
+
+### Environment Variables (prefix `CONTEXT_PROTECTOR_`)
+
+| Variable | Description |
+|----------|-------------|
+| `PROVIDER` | Provider name |
+| `RESPONSE_MODE` | `warn` or `block` |
+| `LOG_LEVEL` | Logging level |
+| `LOG_FILE` | Log file path |
+| `SCANNER_MODE` | LlamaFirewall mode |
+| `NEMO_MODE` | NeMo detection mode |
+| `OLLAMA_MODEL` | Ollama model for NeMo local mode |
+| `OLLAMA_BASE_URL` | Ollama server URL |
+| `GCP_PROJECT_ID` | GCP project ID |
+| `GCP_LOCATION` | GCP region |
+| `GCP_TEMPLATE_ID` | Model Armor template ID |
 
 ## Coding Standards
 

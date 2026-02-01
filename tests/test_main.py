@@ -5,7 +5,7 @@ from context_protector import HookHandler, __version__, main, process_hook
 
 def test_version() -> None:
     """Test that version is set."""
-    assert __version__ == "0.1.0"
+    assert __version__ == "1.0.1"
 
 
 def test_main_exists() -> None:
