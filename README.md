@@ -5,13 +5,14 @@
 [![License](https://img.shields.io/github/license/ottosulin/context-protector.svg)](https://github.com/ottosulin/context-protector/blob/main/LICENSE)
 [![CI](https://github.com/ottosulin/context-protector/actions/workflows/test.yml/badge.svg)](https://github.com/ottosulin/context-protector/actions/workflows/test.yml)
 
-Protect AI coding agents from prompt injection attacks. Works with **Claude Code** and other AI coding tools.
+Protect AI coding agents from prompt injection attacks. Works with **Claude Code**, **OpenCode**, and other AI coding tools.
 
 ## Features
 
 - **Prompt Injection Detection** - Block malicious inputs before tool execution
 - **Output Scanning** - Detect threats in tool outputs (file reads, API responses)
 - **Multiple Backends** - LlamaFirewall (default), NeMo Guardrails, GCP Model Armor
+- **Multi-Platform** - Native support for Claude Code and OpenCode
 - **Fully Local** - No cloud dependencies required (optional Ollama support)
 
 ## Installation
@@ -27,7 +28,27 @@ pip install context-protector
 pipx install context-protector
 ```
 
-## Quick Start (Claude Code)
+## Quick Start
+
+### OpenCode
+
+**1. Install the plugin:**
+
+```bash
+pip install context-protector
+```
+
+**2. Add to your `opencode.json`:**
+
+```json
+{
+  "plugin": ["opencode-context-protector"]
+}
+```
+
+**3. Done!** The plugin will scan all tool inputs and outputs.
+
+### Claude Code
 
 **1. Install and initialize:**
 
@@ -64,15 +85,15 @@ Use `"matcher": "mcp*"` just to [inspect MCP calls](https://code.claude.com/docs
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Claude Code                            │
-│                                                             │
-│  Tool Request ──► PreToolUse Hook ──► context-protector     │
-│                        │                    │               │
-│                   [ALLOW/BLOCK]        Scan Input           │
-│                        │                    │               │
-│  Tool Response ◄── PostToolUse Hook ◄── context-protector   │
-│                        │                    │               │
-│                   [WARN/BLOCK]         Scan Output          │
+│                   Claude Code / OpenCode                     │
+│                                                              │
+│  Tool Request ──► PreToolUse Hook ──► context-protector      │
+│                        │                    │                │
+│                   [ALLOW/BLOCK]        Scan Input            │
+│                        │                    │                │
+│  Tool Response ◄── PostToolUse Hook ◄── context-protector    │
+│                        │                    │                │
+│                   [WARN/BLOCK]         Scan Output           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -163,6 +184,33 @@ gcp_model_armor:
 | `warn` | Log threats, inject warnings (default) |
 | `block` | Block malicious content entirely |
 
+## OpenCode Plugin
+
+The OpenCode plugin (`opencode-context-protector`) provides:
+
+- **Pre-execution scanning** via `tool.execute.before` hook
+- **Post-execution scanning** via `tool.execute.after` hook
+- **Built-in .env protection** - Blocks reading `.env`, `*.pem`, `*.key`, `credentials.json`
+- **Configurable skip list** - Exclude specific tools from scanning
+
+### OpenCode Plugin Configuration
+
+```bash
+# Response mode
+export CONTEXT_PROTECTOR_RESPONSE_MODE=block
+
+# Disable .env protection
+export CONTEXT_PROTECTOR_ENV_PROTECTION=false
+
+# Skip certain tools
+export CONTEXT_PROTECTOR_SKIP_TOOLS=glob,find
+
+# Debug logging
+export CONTEXT_PROTECTOR_DEBUG=true
+```
+
+See [`opencode-plugin/README.md`](opencode-plugin/README.md) for full documentation.
+
 ## CLI Reference
 
 ```bash
@@ -187,13 +235,41 @@ Output:
 {"safe": true, "alert": null}
 ```
 
+## Project Structure
+
+```
+context-protector/
+├── src/context_protector/     # Python package (PyPI)
+│   ├── __init__.py            # CLI entry point
+│   ├── config.py              # Configuration system
+│   ├── hook_handler.py        # Claude Code hook processing
+│   └── providers/             # Detection backends
+├── opencode-plugin/           # OpenCode plugin (npm)
+│   ├── src/index.ts           # Plugin entry point
+│   ├── src/backend.ts         # Python backend wrapper
+│   └── tests/                 # Plugin tests
+├── tests/                     # Python tests
+└── pyproject.toml
+```
+
 ## Development
+
+### Python Package
 
 ```bash
 git clone https://github.com/ottosulin/context-protector.git
 cd context-protector
 uv sync --all-groups
 uv run pytest
+```
+
+### OpenCode Plugin
+
+```bash
+cd opencode-plugin
+bun install
+bun test
+bun run build
 ```
 
 ## License

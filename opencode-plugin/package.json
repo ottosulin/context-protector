@@ -1,0 +1,57 @@
+{
+  "name": "opencode-context-protector",
+  "version": "1.0.0",
+  "description": "Prompt injection protection plugin for OpenCode - guards against malicious content in tool inputs and outputs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "opencode",
+    "plugin",
+    "security",
+    "prompt-injection",
+    "guardrails",
+    "ai-safety",
+    "llm-security"
+  ],
+  "author": "Otto Sulin",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ottosulin/context-protector.git",
+    "directory": "opencode-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/ottosulin/context-protector/issues"
+  },
+  "homepage": "https://github.com/ottosulin/context-protector#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=0.1.0"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "latest",
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  }
+}
