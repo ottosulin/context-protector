@@ -36,6 +36,7 @@ context-protector init
 ```
 
 **2. Add to Claude Code settings** (`~/.claude/settings.json`):
+Use `"matcher": "mcp*"` just to [inspect MCP calls](https://code.claude.com/docs/en/hooks#matcher-patterns) - will save on tokens and focus on more risky tools.
 
 ```json
 {
