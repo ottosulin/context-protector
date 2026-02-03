@@ -37,13 +37,15 @@ export async function isBackendAvailable(): Promise<boolean> {
  * Error thrown when the backend fails
  */
 export class BackendError extends Error {
-  constructor(
-    message: string,
-    public readonly code?: number,
-    public readonly stderr?: string
-  ) {
+  public readonly code?: number
+  public readonly stderr?: string
+
+  constructor(message: string, code?: number, stderr?: string) {
     super(message)
+    this.code = code
+    this.stderr = stderr
     this.name = "BackendError"
+    Object.setPrototypeOf(this, BackendError.prototype)
   }
 }
 

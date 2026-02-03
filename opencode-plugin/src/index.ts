@@ -30,7 +30,7 @@ export type {
   GuardrailAlert,
 } from "./types.js"
 export { DEFAULT_CONFIG } from "./types.js"
-export { BackendError, isBackendAvailable } from "./backend.js"
+export { isBackendAvailable } from "./backend.js"
 
 interface LogEntry {
   service: string
