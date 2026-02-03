@@ -7,6 +7,9 @@
 
 Protect AI coding agents from prompt injection attacks. Works with **Claude Code**, **OpenCode**, and other AI coding tools.
 
+TL;DR: below screenshot of `context-protector` in action.
+<img width="1068" height="261" alt="context-guard" src="https://github.com/user-attachments/assets/d5b221a8-54ef-4df4-a4d9-3376e78d665f" />
+
 ## Features
 
 - **Prompt Injection Detection** - Block malicious inputs before tool execution
@@ -58,20 +61,20 @@ context-protector init
 
 **2. Add to Claude Code settings** (`~/.claude/settings.json`):
 
-Use `"matcher": "mcp*"` just to [inspect MCP calls](https://code.claude.com/docs/en/hooks#matcher-patterns) - will save on tokens and focus on more risky tools.
+Use `"matcher": "*"` to [inspect all tool calls](https://code.claude.com/docs/en/hooks#matcher-patterns) - limiting to MCP will save on tokens and focus more on where it matters.
 
 ```json
 {
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "*",
+        "matcher": "mcp*",
         "hooks": [{"type": "command", "command": "context-protector"}]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "*",
+        "matcher": "mcp*",
         "hooks": [{"type": "command", "command": "context-protector"}]
       }
     ]
@@ -253,6 +256,12 @@ context-protector/
 ```
 
 ## Development
+
+### Contributing
+
+Contributions very welcome for new guardrail providers and support for other agentic tools!
+
+Please create an issue first before submitting a PR.
 
 ### Python Package
 
