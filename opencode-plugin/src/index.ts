@@ -22,15 +22,7 @@ import type {
   ToolExecuteAfterOutput,
 } from "./types.js"
 
-// Re-export types for consumers
-export type {
-  CheckResult,
-  ContentType,
-  PluginConfig,
-  GuardrailAlert,
-} from "./types.js"
-export { DEFAULT_CONFIG } from "./types.js"
-export { isBackendAvailable } from "./backend.js"
+
 
 interface LogEntry {
   service: string
@@ -125,7 +117,7 @@ function formatAlert(
  * CONTEXT_PROTECTOR_ENV_PROTECTION=true
  * ```
  */
-export const ContextProtector: Plugin = async (_ctx) => {
+const ContextProtector: Plugin = async (_ctx) => {
   const config = mergeConfig()
   const logger = createLogger(config.debug)
   const backendAvailable = await isBackendAvailable()

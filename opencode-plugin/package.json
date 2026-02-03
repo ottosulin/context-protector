@@ -1,6 +1,6 @@
 {
   "name": "opencode-context-protector",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Prompt injection protection plugin for OpenCode - guards against malicious content in tool inputs and outputs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
