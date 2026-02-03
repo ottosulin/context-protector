@@ -22,6 +22,9 @@ DEFAULT_CONFIG_TEMPLATE = """\
 # Environment variables override this file (prefix: CONTEXT_PROTECTOR_)
 # Run 'context-protector init' to regenerate defaults.
 
+# Enable/disable protection (use 'context-protector --disable' to toggle)
+enabled: true
+
 # Which provider to use: LlamaFirewall, NeMoGuardrails, GCPModelArmor
 provider: LlamaFirewall
 
@@ -94,6 +97,7 @@ class GCPModelArmorConfig:
 class Config:
     """Complete configuration."""
 
+    enabled: bool = True
     provider: str = "LlamaFirewall"
     response_mode: str = "warn"
     log_level: str = "WARNING"
@@ -181,6 +185,9 @@ def _apply_env_overrides(config: Config) -> Config:
         Updated configuration
     """
     # Top-level settings
+    if enabled := os.environ.get("CONTEXT_PROTECTOR_ENABLED"):
+        config.enabled = enabled.lower() in ("true", "1", "yes")
+
     if provider := os.environ.get("CONTEXT_PROTECTOR_PROVIDER"):
         config.provider = provider
 
@@ -238,6 +245,8 @@ def load_config() -> Config:
         logger.debug("Loaded config from %s", config_path)
 
         # Merge top-level settings
+        if "enabled" in file_data:
+            config.enabled = bool(file_data["enabled"])
         if "provider" in file_data:
             config.provider = file_data["provider"]
         if "response_mode" in file_data:
@@ -317,8 +326,45 @@ def init_config(force: bool = False) -> Path:
     if config_path.exists() and not force:
         raise FileExistsError(f"Config already exists: {config_path}")
 
-    # Use the template with comments for better UX
     save_default_config(config_path)
+
+    return config_path
+
+
+def set_enabled(enabled: bool) -> Path:
+    """Enable or disable context-protector.
+
+    Updates the 'enabled' field in the config file while preserving
+    other settings and comments. Creates config file if it doesn't exist.
+
+    Args:
+        enabled: True to enable, False to disable
+
+    Returns:
+        Path to config file
+    """
+    import re
+
+    config_path = get_config_path()
+
+    if not config_path.exists():
+        save_default_config(config_path)
+
+    content = config_path.read_text()
+    enabled_str = "true" if enabled else "false"
+
+    if re.search(r"^enabled:\s*(true|false)", content, re.MULTILINE):
+        content = re.sub(
+            r"^enabled:\s*(true|false)",
+            f"enabled: {enabled_str}",
+            content,
+            flags=re.MULTILINE,
+        )
+    else:
+        content = f"enabled: {enabled_str}\n\n" + content
+
+    config_path.write_text(content)
+    reset_config()
 
     return config_path
 

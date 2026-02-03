@@ -187,6 +187,26 @@ gcp_model_armor:
 | `warn` | Log threats, inject warnings (default) |
 | `block` | Block malicious content entirely |
 
+## Temporarily Disabling Protection
+
+If you encounter false positives and need to temporarily disable protection:
+
+```bash
+# Disable protection
+context-protector --disable
+
+# Re-enable when done
+context-protector --enable
+```
+
+This modifies your config file and takes effect immediately on the next tool call - no Claude Code restart needed.
+
+You can also edit the config file directly:
+
+```yaml
+enabled: false  # Set to true to re-enable
+```
+
 ## OpenCode Plugin
 
 The OpenCode plugin (`opencode-context-protector`) provides:

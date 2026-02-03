@@ -4,7 +4,7 @@ import json
 import logging
 import sys
 
-from context_protector.config import get_config
+from context_protector.config import get_config, load_config
 from context_protector.guardrail_types import (
     ContentToCheck,
     HookEventName,
@@ -230,8 +230,12 @@ def process_hook() -> None:
     - Exit 0 with permissionDecision: "deny" blocks tool execution
     - Exit 2 for hard errors
     """
+    config = load_config()
+    if not config.enabled:
+        print(json.dumps({"continue": True}))
+        sys.exit(0)
+
     try:
-        # Read input from stdin
         input_data = sys.stdin.read()
         if not input_data:
             logger.error("No input received from stdin")

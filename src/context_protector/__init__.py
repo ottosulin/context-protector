@@ -15,7 +15,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from context_protector.config import get_config, init_config, set_config_path
+from context_protector.config import (
+    get_config,
+    init_config,
+    load_config,
+    set_config_path,
+    set_enabled,
+)
 from context_protector.hook_handler import HookHandler, process_hook
 
 __version__ = "1.0.1"
@@ -104,6 +110,11 @@ def _handle_check_command() -> None:
     """
     _configure_logging()
 
+    config = load_config()
+    if not config.enabled:
+        print(json.dumps({"safe": True, "alert": None}))
+        sys.exit(0)
+
     input_data_str = sys.stdin.read().strip()
     if not input_data_str:
         error_result = {"error": "No input provided", "safe": True, "alert": None}
@@ -163,6 +174,8 @@ Usage:
   context-protector --config <path>     Use custom config file
   context-protector init                Create default config file
   context-protector init --force        Overwrite existing config file
+  context-protector --disable           Temporarily disable protection
+  context-protector --enable            Re-enable protection
   context-protector --help              Show this help message
   context-protector --version           Show version
 
@@ -221,6 +234,19 @@ def main() -> None:
 
         if command == "init":
             _handle_init_command()
+            return
+
+        if command == "--disable":
+            config_path = set_enabled(False)
+            print(f"Context Protector disabled.")
+            print(f"Config: {config_path}")
+            print("Run 'context-protector --enable' to re-enable.")
+            return
+
+        if command == "--enable":
+            config_path = set_enabled(True)
+            print(f"Context Protector enabled.")
+            print(f"Config: {config_path}")
             return
 
         if command in ("--help", "-h"):

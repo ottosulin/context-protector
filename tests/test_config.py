@@ -51,6 +51,7 @@ class TestDataclasses:
     def test_config_defaults(self) -> None:
         """Test Config default values."""
         config = Config()
+        assert config.enabled is True
         assert config.provider == "LlamaFirewall"
         assert config.response_mode == "warn"
         assert config.log_level == "WARNING"
