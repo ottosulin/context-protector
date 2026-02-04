@@ -4,11 +4,11 @@ Defines data classes for hook inputs, outputs, and guardrail alerts.
 """
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class HookEventName(str, Enum):
+class HookEventName(StrEnum):
     """Hook event names supported by Claude Code."""
 
     PRE_TOOL_USE = "PreToolUse"
@@ -17,7 +17,7 @@ class HookEventName(str, Enum):
     SUB_AGENT_STOP = "SubagentStop"
 
 
-class PermissionDecision(str, Enum):
+class PermissionDecision(StrEnum):
     """Permission decisions for PreToolUse hooks."""
 
     ALLOW = "allow"
@@ -25,7 +25,7 @@ class PermissionDecision(str, Enum):
     ASK = "ask"
 
 
-class PostToolUseDecision(str, Enum):
+class PostToolUseDecision(StrEnum):
     """Decision options for PostToolUse hooks.
 
     Unlike PreToolUse, PostToolUse runs AFTER the tool has completed.

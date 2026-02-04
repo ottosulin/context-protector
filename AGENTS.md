@@ -72,7 +72,7 @@ uv run pytest tests/ -v \
   --ignore=tests/test_gcp_model_armor.py \
   --ignore=tests/test_apriel_guard.py
 
-# Linting and type checking
+# Linting and type checking (MUST RUN BEFORE COMMITTING)
 uv run ruff check src tests
 uv run mypy src
 

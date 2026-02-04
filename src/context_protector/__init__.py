@@ -242,14 +242,14 @@ def main() -> None:
 
         if command == "--disable":
             config_path = set_enabled(False)
-            print(f"Context Protector disabled.")
+            print("Context Protector disabled.")
             print(f"Config: {config_path}")
             print("Run 'context-protector --enable' to re-enable.")
             return
 
         if command == "--enable":
             config_path = set_enabled(True)
-            print(f"Context Protector enabled.")
+            print("Context Protector enabled.")
             print(f"Config: {config_path}")
             return
 

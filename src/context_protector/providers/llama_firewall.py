@@ -10,7 +10,7 @@ import io
 import logging
 import os
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from context_protector.guardrail_types import ContentToCheck, GuardrailAlert
 from context_protector.providers.base import GuardrailProvider
