@@ -39,11 +39,11 @@ log_file: null        # Optional log file path
 
 # LlamaFirewall provider settings
 llama_firewall:
-  # Scanner mode: auto, basic, or full
-  # - auto: Try full, fall back to basic on auth error (recommended)
-  # - basic: No auth required (HIDDEN_ASCII, REGEX, CODE_SHIELD)
-  # - full: Requires HuggingFace auth (includes PROMPT_GUARD)
-  scanner_mode: auto
+  # Scanner mode: basic, auto, or full
+  # - basic: No setup required, fast (HIDDEN_ASCII, REGEX, CODE_SHIELD) - recommended
+  # - auto/full: Currently broken due to upstream bug in llamafirewall package
+  #   (uses deprecated HuggingFace API). Use basic mode until Meta releases a fix.
+  scanner_mode: basic
 
 # NeMo Guardrails provider settings
 nemo_guardrails:
@@ -72,7 +72,7 @@ gcp_model_armor:
 class LlamaFirewallConfig:
     """LlamaFirewall provider configuration."""
 
-    scanner_mode: str = "auto"
+    scanner_mode: str = "basic"
 
 
 @dataclass

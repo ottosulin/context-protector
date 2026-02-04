@@ -31,13 +31,13 @@ install-dev:
 
 # Install both Python tool and OpenCode plugin locally for testing
 install-local:
-	@echo "Installing Python package..."
-	uv pip install -e .
+	@echo "Installing Python package as global tool..."
+	uv tool install --force --editable .
 	@echo "Building and linking OpenCode plugin..."
 	cd opencode-plugin && npm install && npm run build && npm link
 	@echo ""
 	@echo "Done! Both packages installed locally."
-	@echo "  - Python: context-protector (editable)"
+	@echo "  - Python: context-protector (global tool, editable)"
 	@echo "  - npm: opencode-context-protector (linked)"
 
 # Development

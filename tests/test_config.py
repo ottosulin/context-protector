@@ -32,7 +32,7 @@ class TestDataclasses:
     def test_llama_firewall_config_defaults(self) -> None:
         """Test LlamaFirewallConfig default values."""
         config = LlamaFirewallConfig()
-        assert config.scanner_mode == "auto"
+        assert config.scanner_mode == "basic"
 
     def test_nemo_guardrails_config_defaults(self) -> None:
         """Test NeMoGuardrailsConfig default values."""
@@ -256,7 +256,7 @@ class TestLoadConfig:
             config = load_config()
             # Should have defaults
             assert config.provider == "LlamaFirewall"
-            assert config.llama_firewall.scanner_mode == "auto"
+            assert config.llama_firewall.scanner_mode == "basic"
 
     def test_load_config_with_file(self) -> None:
         """Test loading config from file."""
@@ -349,7 +349,7 @@ class TestSaveDefaultConfig:
             content = path.read_text()
             assert "# Context Protector Configuration" in content
             assert "provider: LlamaFirewall" in content
-            assert "scanner_mode: auto" in content
+            assert "scanner_mode: basic" in content
 
 
 class TestInitConfig:

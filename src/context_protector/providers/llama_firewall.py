@@ -52,7 +52,20 @@ def _get_llamafirewall() -> Any:
             _llamafirewall_module = llamafirewall
             return llamafirewall
     except Exception as e:
-        _import_error = str(e)
+        error_str = str(e)
+        if "HfFolder" in error_str:
+            setup_url = (
+                "https://github.com/meta-llama/PurpleLlama/tree/main/"
+                "LlamaFirewall#manual-setup"
+            )
+            _import_error = (
+                "LlamaFirewall requires manual model setup. "
+                "The Prompt Guard model must be downloaded before use. "
+                f"See: {setup_url} - "
+                "Or switch to NeMoGuardrails: CONTEXT_PROTECTOR_PROVIDER=NeMoGuardrails"
+            )
+        else:
+            _import_error = error_str
         raise ImportError(_import_error) from e
 
 
@@ -99,9 +112,14 @@ class LlamaFirewallProvider(GuardrailProvider):
         try:
             lf_mod = self._get_module()
         except ImportError as e:
+            error_str = str(e)
+            if "manual model setup" in error_str or "HfFolder" in error_str:
+                explanation = error_str
+            else:
+                explanation = f"LlamaFirewall not available: {e}"
             return GuardrailAlert(
-                explanation=f"LlamaFirewall not available: {e}",
-                data={"error": str(e)},
+                explanation=explanation,
+                data={"error": error_str},
             )
 
         LlamaFirewall = lf_mod.LlamaFirewall
@@ -149,6 +167,19 @@ class LlamaFirewallProvider(GuardrailProvider):
                         "LlamaFirewall PROMPT_GUARD requires authentication. "
                         "Set CONTEXT_PROTECTOR_SCANNER_MODE=basic to use without auth."
                     )
+            elif "HfFolder" in error_str:
+                setup_url = (
+                    "https://github.com/meta-llama/PurpleLlama/tree/main/"
+                    "LlamaFirewall#manual-setup"
+                )
+                if not self._use_fallback and self._scanner_mode == "auto":
+                    self._use_fallback = True
+                    return self.check_content(content)
+                explanation = (
+                    "LlamaFirewall requires manual model setup. "
+                    f"See: {setup_url} - "
+                    "Or set CONTEXT_PROTECTOR_SCANNER_MODE=basic"
+                )
             else:
                 explanation = f"LlamaFirewall error: {error_str}"
 

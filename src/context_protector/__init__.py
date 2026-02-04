@@ -201,7 +201,7 @@ def _handle_init_command() -> None:
         print(f"Created config file: {config_path}")
         print()
         print("Default configuration:")
-        print("  - Provider: LlamaFirewall (auto mode)")
+        print("  - Provider: LlamaFirewall (basic mode)")
         print("  - Response mode: warn")
         print()
         print(f"Edit {config_path} to customize.")

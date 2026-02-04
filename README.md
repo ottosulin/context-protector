@@ -142,13 +142,20 @@ export CONTEXT_PROTECTOR_SCANNER_MODE=basic
 
 ### LlamaFirewall (Default)
 
-Meta's LlamaFirewall for ML-based prompt injection detection.
+Meta's LlamaFirewall for prompt injection detection. Works out of the box in basic mode.
 
 | Mode | Description |
 |------|-------------|
-| `auto` | Tries ML detection, falls back to pattern-based if auth fails |
-| `basic` | Pattern-based only (no HuggingFace auth required) |
-| `full` | Full ML detection (requires [HuggingFace auth](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-86M)) |
+| `basic` | Pattern-based detection, no setup required (default) |
+| `auto` | Tries ML detection, falls back to basic on auth error |
+| `full` | Full ML detection - currently broken due to upstream bug (see note below) |
+
+> **Note**: `full` and `auto` modes are currently broken due to [an upstream bug in llamafirewall](https://github.com/meta-llama/PurpleLlama/issues) where it uses a deprecated HuggingFace API. Use `basic` mode until Meta releases a fix.
+
+```yaml
+llama_firewall:
+  scanner_mode: basic    # Recommended - works without setup
+```
 
 ### NeMo Guardrails
 
