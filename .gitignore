@@ -1,6 +1,8 @@
 # Temporary files
 tmp/
 PLAN.md
+.gitattributes
+.beads
 
 # Python
 __pycache__/

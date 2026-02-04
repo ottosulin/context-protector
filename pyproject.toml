@@ -1,6 +1,6 @@
 [project]
 name = "context-protector"
-version = "1.0.0"
+version = "1.0.2"
 description = "Vendor-neutral guardrails for AI coding agents. Protects against prompt injection attacks."
 readme = "README.md"
 license = { text = "MIT" }

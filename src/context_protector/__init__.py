@@ -12,6 +12,7 @@ import json
 import logging
 import sys
 from dataclasses import dataclass
+from importlib.metadata import version as get_package_version
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +25,10 @@ from context_protector.config import (
 )
 from context_protector.hook_handler import HookHandler, process_hook
 
-__version__ = "1.0.1"
+try:
+    __version__ = get_package_version("context-protector")
+except Exception:
+    __version__ = "0.0.0"
 
 __all__ = ["CheckResult", "HookHandler", "check_content", "main", "process_hook"]
 
