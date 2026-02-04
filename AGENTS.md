@@ -80,6 +80,26 @@ uv run mypy src
 PYTHONPATH=src python3 scripts/smoke_test_check_mode.py
 ```
 
+### Pre-Commit Checklist (MANDATORY)
+
+**Before committing ANY changes, you MUST run:**
+
+```bash
+# Quick check (use this)
+make check
+
+# Or manually:
+uv run ruff check src tests      # Linting
+uv run mypy src                   # Type checking  
+uv run pytest tests/ -v \         # Tests (excluding provider-specific)
+  --ignore=tests/test_llama_firewall.py \
+  --ignore=tests/test_nemo_guardrails.py \
+  --ignore=tests/test_gcp_model_armor.py \
+  --ignore=tests/test_apriel_guard.py
+```
+
+**DO NOT commit if any of these fail.** Fix errors first.
+
 ## Architecture
 
 ### CLI Modes
