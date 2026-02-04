@@ -1,11 +1,12 @@
-.PHONY: help install install-dev build test lint lint-fix typecheck check smoke-test clean
+.PHONY: help install install-dev install-local build test lint lint-fix typecheck check smoke-test clean
 
 help:
 	@echo "Context Protector - Development Commands"
 	@echo ""
 	@echo "Setup:"
-	@echo "  make install      Install dependencies"
-	@echo "  make install-dev  Install with dev dependencies"
+	@echo "  make install        Install dependencies"
+	@echo "  make install-dev    Install with dev dependencies"
+	@echo "  make install-local  Install Python + OpenCode plugin locally for testing"
 	@echo ""
 	@echo "Development:"
 	@echo "  make test         Run tests"
@@ -27,6 +28,17 @@ install:
 
 install-dev:
 	uv sync --all-groups
+
+# Install both Python tool and OpenCode plugin locally for testing
+install-local:
+	@echo "Installing Python package..."
+	uv pip install -e .
+	@echo "Building and linking OpenCode plugin..."
+	cd opencode-plugin && npm install && npm run build && npm link
+	@echo ""
+	@echo "Done! Both packages installed locally."
+	@echo "  - Python: context-protector (editable)"
+	@echo "  - npm: opencode-context-protector (linked)"
 
 # Development
 test:
