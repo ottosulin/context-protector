@@ -245,7 +245,8 @@ class TestHookDisabled:
     def test_check_mode_works_when_enabled(self, temp_config_dir: Path) -> None:
         """--check works normally when enabled."""
         config_path = temp_config_dir / "config.yaml"
-        config_path.write_text("enabled: true\nprovider: LlamaFirewall\n")
+        # Use Mock provider for deterministic results
+        config_path.write_text("enabled: true\nprovider: Mock\n")
 
         input_data = json.dumps({"content": "normal content", "type": "tool_input"})
 

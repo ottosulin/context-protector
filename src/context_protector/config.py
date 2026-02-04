@@ -124,13 +124,18 @@ def set_config_path(path: Path | None) -> None:
 def get_config_path() -> Path:
     """Get the config file path.
 
-    Returns the custom path if set, otherwise uses XDG_CONFIG_HOME or ~/.config.
+    Returns the custom path if set via set_config_path() or CONTEXT_PROTECTOR_CONFIG
+    environment variable, otherwise uses XDG_CONFIG_HOME or ~/.config.
 
     Returns:
         Path to the config file
     """
     if _config_path_override is not None:
         return _config_path_override
+
+    # Check environment variable for config path
+    if config_env := os.environ.get("CONTEXT_PROTECTOR_CONFIG"):
+        return Path(config_env)
 
     xdg_config = os.environ.get("XDG_CONFIG_HOME")
     base = Path(xdg_config) if xdg_config else Path.home() / ".config"
